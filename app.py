@@ -4,17 +4,20 @@ import os
 
 app = Flask(__name__)
 
-# ========== CONFIG ==========
+# ========= ENV VARIABLES =========
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
-SHIPROCKET_TOKEN = os.getenv("SHIPROCKET_TOKEN")  # your secret for webhook verification
-# =============================
+SHIPROCKET_TOKEN = os.getenv("SHIPROCKET_TOKEN")  # Optional, for validation
+# =================================
 
-def send_telegram_message(message):
-    """Send a message to your Telegram chat."""
+def send_telegram_message(message: str):
+    """Send message to Telegram chat."""
     url = f"https://api.telegram.org/bot{TELEGRAM_TOKEN}/sendMessage"
     data = {"chat_id": CHAT_ID, "text": message}
-    requests.post(url, data=data)
+    try:
+        requests.post(url, data=data)
+    except Exception as e:
+        print("❌ Telegram send failed:", e)
 
 @app.route('/')
 def home():
@@ -22,20 +25,19 @@ def home():
 
 @app.route('/shiprocket-webhook', methods=['POST'])
 def shiprocket_webhook():
-    """Receive webhook updates from Shiprocket."""
-    data = request.get_json()
-    print("📦 Webhook Data:", data)
+    """Handle Shiprocket webhook (must be POST and open access)."""
+    data = request.get_json(silent=True)
+    print("📦 Received Webhook:", data)
 
     if not data:
-        return jsonify({"error": "Invalid data"}), 400
+        return jsonify({"error": "Invalid JSON"}), 400
 
-    # 1️⃣ Verify the token
+    # Optional: check token if Shiprocket sends it
     received_token = data.get("token")
-    if received_token != SHIPROCKET_TOKEN:
-        print("❌ Invalid token received!")
+    if SHIPROCKET_TOKEN and received_token and received_token != SHIPROCKET_TOKEN:
+        print("❌ Invalid token")
         return jsonify({"error": "Unauthorized"}), 403
 
-    # 2️⃣ Process RTO orders
     order_id = data.get("order_id")
     status = data.get("status", "")
     courier = data.get("courier_name", "Unknown")
@@ -48,7 +50,7 @@ def shiprocket_webhook():
             f"Status: {status}"
         )
         send_telegram_message(message)
-        print("✅ Telegram message sent!")
+        print("✅ Telegram message sent")
 
     return jsonify({"success": True}), 200
 
