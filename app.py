@@ -7,6 +7,7 @@ app = Flask(__name__)
 # ========== CONFIG ==========
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("CHAT_ID")
+SHIPROCKET_TOKEN = os.getenv("SHIPROCKET_TOKEN")  # your secret for webhook verification
 # =============================
 
 def send_telegram_message(message):
@@ -17,7 +18,7 @@ def send_telegram_message(message):
 
 @app.route('/')
 def home():
-    return "✅ Shiprocket Webhook is running!"
+    return "✅ Shiprocket Webhook Bot is running!"
 
 @app.route('/shiprocket-webhook', methods=['POST'])
 def shiprocket_webhook():
@@ -28,6 +29,13 @@ def shiprocket_webhook():
     if not data:
         return jsonify({"error": "Invalid data"}), 400
 
+    # 1️⃣ Verify the token
+    received_token = data.get("token")
+    if received_token != SHIPROCKET_TOKEN:
+        print("❌ Invalid token received!")
+        return jsonify({"error": "Unauthorized"}), 403
+
+    # 2️⃣ Process RTO orders
     order_id = data.get("order_id")
     status = data.get("status", "")
     courier = data.get("courier_name", "Unknown")
@@ -40,7 +48,7 @@ def shiprocket_webhook():
             f"Status: {status}"
         )
         send_telegram_message(message)
-        print("✅ Telegram message sent")
+        print("✅ Telegram message sent!")
 
     return jsonify({"success": True}), 200
 
