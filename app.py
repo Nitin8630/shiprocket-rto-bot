@@ -23,7 +23,7 @@ def send_telegram_message(message: str):
 def home():
     return "✅ Shiprocket Webhook Bot is running!"
 
-@app.route('/shiprocket-webhook', methods=['POST'])
+@app.route('/rto-update', methods=['POST'])
 def shiprocket_webhook():
     """Handle Shiprocket webhook (must be POST and open access)."""
     data = request.get_json(silent=True)
