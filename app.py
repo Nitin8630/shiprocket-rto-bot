@@ -32,12 +32,6 @@ def shiprocket_webhook():
     if not data:
         return jsonify({"error": "Invalid JSON"}), 400
 
-    # Optional: check token if Shiprocket sends it
-    received_token = data.get("token")
-    if SHIPROCKET_TOKEN and received_token and received_token != SHIPROCKET_TOKEN:
-        print("❌ Invalid token")
-        return jsonify({"error": "Unauthorized"}), 403
-
     order_id = data.get("order_id")
     status = data.get("status", "")
     courier = data.get("courier_name", "Unknown")
